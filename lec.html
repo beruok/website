@@ -1,0 +1,148 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <link rel="stylesheet" href="sty.css" type="text/css">
+    <meta charset="UTF-8">
+    <title>自己紹介</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex; 
+            flex-direction: column;
+            margin: 50px;
+        }
+        .button-container {
+            display: flex; 
+            justify-content: flex-start; 
+            margin-top: 20px; 
+        }
+        .button {
+            padding: 10px 20px;
+            font-size: 18px;
+            margin: 10px; 
+            cursor: pointer;
+        }
+        .result {
+            font-size: 14px; 
+            margin-top: 20px;
+            color: #4CAF50; 
+        }
+    </style>
+</head>
+<body>
+
+    <h2>大橋和也</h2>
+    <h3>出身</h3>
+    <p>岐阜県</p>
+
+    <h3>学年</h3>
+    <p>2年生</p>
+
+    <h2>趣味</h2>
+    <p>YouTube</p>
+    
+    <a href="https://www.youtube.com/@nee">おすすめのチャンネル</a><br>
+
+    <p>
+        <img src="NEE.jpg" alt="NEEの画像" width="90" height="60">
+    </p>
+
+    <h3>好きなジャンル</h3>
+    <p>アニメ</p>
+    <p>漫画</p>
+    <p>彼岸島</p>
+    <img src="hi.jpg" alt="彼岸島の画像" width="90" height="60">
+    
+    <address>
+        作者の名前: 大橋和也<br>
+        更新日: <time datetime="2024-10-19">2024年10月19日</time><br>
+      
+    </address>
+
+    <h2>じゃんけんゲーム</h2>
+    <h3>あなたのカードを選んでください:</h3>
+    <div class="button-container">
+        <button class="button" onclick="play('グー')">グー</button>
+        <button class="button" onclick="play('チョキ')">チョキ</button>
+        <button class="button" onclick="play('パー')">パー</button>
+    </div>
+
+    <div class="result" id="result"></div>
+
+    <script>
+        const cards = ["グー", "チョキ", "パー"];
+        const winDict = { "グー": "チョキ", "チョキ": "パー", "パー": "グー" };
+        const loseDict = { "グー": "パー", "チョキ": "グー", "パー": "チョキ" };
+
+        let playerCards = { "グー": 4, "チョキ": 4, "パー": 4 };
+        let cpuCards = { "グー": 4, "チョキ": 4, "パー": 4 };
+        let playerStars = 3;
+        let cpuStars = 3;
+
+        function play(userCard) {
+     
+            if (playerCards[userCard] <= 0) {
+                alert("もうそのカードは使えません。別のカードを選んでください。");
+                return;
+            }
+
+        
+            let cpuCard;
+            if (Math.random() < (1 / 6)) {
+                cpuCard = loseDict[userCard];
+                if (cpuCards[cpuCard] <= 0) {
+                    cpuCard = cards[Math.floor(Math.random() * cards.length)];
+                    while (cpuCards[cpuCard] <= 0) {
+                        cpuCard = cards[Math.floor(Math.random() * cards.length)];
+                    }
+                }
+            } else {
+                cpuCard = cards[Math.floor(Math.random() * cards.length)];
+                while (cpuCards[cpuCard] <= 0) {
+                    cpuCard = cards[Math.floor(Math.random() * cards.length)];
+                }
+            }
+
+            playerCards[userCard]--;
+            cpuCards[cpuCard]--;
+
+            let result;
+            if (winDict[userCard] === cpuCard) {
+                result = '勝ち';
+                playerStars++;
+                cpuStars--;
+            } else if (winDict[cpuCard] === userCard) {
+                result = '負け';
+                playerStars--;
+                cpuStars++;
+            } else {
+                result = '引き分け';
+            }
+
+            let overallResult = null;
+            if (Object.values(playerCards).reduce((a, b) => a + b) === 0 || 
+                Object.values(cpuCards).reduce((a, b) => a + b) === 0) {
+                if (playerStars > cpuStars) {
+                    overallResult = 'ゲーム終了: あなたの勝ちです！';
+                } else if (playerStars < cpuStars) {
+                    overallResult = 'ゲーム終了: コンピュータの勝ちです！';
+                } else {
+                    overallResult = 'ゲーム終了: 引き分けです！';
+                }
+            }
+
+            const resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = `
+                あなたのカード: ${userCard}<br>
+                コンピュータのカード: ${cpuCard}<br>
+                結果: ${result}<br>
+                残りのカード: あなた (${JSON.stringify(playerCards)}), コンピュータ (${JSON.stringify(cpuCards)})<br>
+                あなたの星: ${playerStars}, コンピュータの星: ${cpuStars}<br>
+                ${overallResult ? overallResult : ""}
+            `;
+        }
+    </script>
+
+</body> 
+</html>
