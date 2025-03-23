@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>オセロゲーム</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            margin: 20px 0;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            grid-template-rows: repeat(8, 60px);
+            margin: 0 auto;
+            border: 2px solid #333;
+        }
+        .cell {
+            width: 60px;
+            height: 60px;
+            background-color: #4CAF50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #333;
+        }
+        .black {
+            width: 50px;
+            height: 50px;
+            background-color: black;
+            border-radius: 50%;
+        }
+        .white {
+            width: 50px;
+            height: 50px;
+            background-color: white;
+            border-radius: 50%;
+        }
+        .controls {
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>オセロゲーム</h1>
+    <div class="board" id="board"></div>
+    <div class="controls">
+        <button onclick="resetBoard()">リセット</button>
+    </div>
+    <script>
+        const board = document.getElementById('board');
+        const SIZE = 8;
+        let cells = [];
+        
+        function createBoard() {
+            board.innerHTML = '';
+            cells = [];
+            for (let row = 0; row < SIZE; row++) {
+                cells[row] = [];
+                for (let col = 0; col < SIZE; col++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', () => placeDisk(row, col));
+                    board.appendChild(cell);
+                    cells[row][col] = cell;
+                }
+            }
+            // 初期配置
+            placeInitialDisks();
+        }
+        
+        function placeInitialDisks() {
+            cells[3][3].classList.add('white');
+            cells[4][4].classList.add('white');
+            cells[3][4].classList.add('black');
+            cells[4][3].classList.add('black');
+        }
+        
+        function placeDisk(row, col) {
+            if (!cells[row][col].classList.contains('black') && !cells[row][col].classList.contains('white')) {
+                const isBlackTurn = document.querySelectorAll('.black').length <= document.querySelectorAll('.white').length;
+                cells[row][col].classList.add(isBlackTurn ? 'black' : 'white');
+            }
+        }
+        
+        function resetBoard() {
+            createBoard();
+        }
+        
+        createBoard();
+    </script>
+</body>
+</html>
