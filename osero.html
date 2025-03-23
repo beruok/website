@@ -31,18 +31,13 @@
             align-items: center;
             border: 1px solid #333;
         }
-        .black {
+        .black, .white {
             width: 50px;
             height: 50px;
-            background-color: black;
             border-radius: 50%;
         }
-        .white {
-            width: 50px;
-            height: 50px;
-            background-color: white;
-            border-radius: 50%;
-        }
+        .black { background-color: black; }
+        .white { background-color: white; }
         .controls {
             margin: 20px;
         }
@@ -55,48 +50,112 @@
         <button onclick="resetBoard()">リセット</button>
     </div>
     <script>
-        const board = document.getElementById('board');
         const SIZE = 8;
-        let cells = [];
+        let board = [];
+        let currentPlayer = 'black';
         
         function createBoard() {
-            board.innerHTML = '';
-            cells = [];
+            const boardElement = document.getElementById('board');
+            boardElement.innerHTML = '';
+            board = [];
             for (let row = 0; row < SIZE; row++) {
-                cells[row] = [];
+                board[row] = [];
                 for (let col = 0; col < SIZE; col++) {
                     const cell = document.createElement('div');
                     cell.classList.add('cell');
                     cell.dataset.row = row;
                     cell.dataset.col = col;
                     cell.addEventListener('click', () => placeDisk(row, col));
-                    board.appendChild(cell);
-                    cells[row][col] = cell;
+                    boardElement.appendChild(cell);
+                    board[row][col] = cell;
                 }
             }
-            // 初期配置
             placeInitialDisks();
         }
-        
+
         function placeInitialDisks() {
-            cells[3][3].classList.add('white');
-            cells[4][4].classList.add('white');
-            cells[3][4].classList.add('black');
-            cells[4][3].classList.add('black');
+            board[3][3].classList.add('white');
+            board[4][4].classList.add('white');
+            board[3][4].classList.add('black');
+            board[4][3].classList.add('black');
         }
         
         function placeDisk(row, col) {
-            if (!cells[row][col].classList.contains('black') && !cells[row][col].classList.contains('white')) {
-                const isBlackTurn = document.querySelectorAll('.black').length <= document.querySelectorAll('.white').length;
-                cells[row][col].classList.add(isBlackTurn ? 'black' : 'white');
+            if (board[row][col].classList.contains('black') || board[row][col].classList.contains('white')) {
+                return;
+            }
+            
+            if (isValidMove(row, col, currentPlayer)) {
+                board[row][col].classList.add(currentPlayer);
+                flipDisks(row, col, currentPlayer);
+                currentPlayer = (currentPlayer === 'black') ? 'white' : 'black';
             }
         }
-        
+
+        function isValidMove(row, col, player) {
+            const directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],          [0, 1],
+                [1, -1], [1, 0], [1, 1]
+            ];
+            for (const [dx, dy] of directions) {
+                if (checkDirection(row, col, dx, dy, player)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function checkDirection(row, col, dx, dy, player) {
+            let x = row + dx;
+            let y = col + dy;
+            let hasOpponent = false;
+
+            while (x >= 0 && x < SIZE && y >= 0 && y < SIZE) {
+                if (board[x][y].classList.contains(player)) {
+                    return hasOpponent;
+                }
+                if (!board[x][y].classList.contains('black') && !board[x][y].classList.contains('white')) {
+                    return false;
+                }
+                hasOpponent = true;
+                x += dx;
+                y += dy;
+            }
+            return false;
+        }
+
+        function flipDisks(row, col, player) {
+            const directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],          [0, 1],
+                [1, -1], [1, 0], [1, 1]
+            ];
+
+            for (const [dx, dy] of directions) {
+                if (checkDirection(row, col, dx, dy, player)) {
+                    let x = row + dx;
+                    let y = col + dy;
+
+                    while (x >= 0 && x < SIZE && y >= 0 && y < SIZE) {
+                        if (board[x][y].classList.contains(player)) {
+                            break;
+                        }
+                        board[x][y].classList.remove('black', 'white');
+                        board[x][y].classList.add(player);
+                        x += dx;
+                        y += dy;
+                    }
+                }
+            }
+        }
+
         function resetBoard() {
             createBoard();
         }
-        
+
         createBoard();
     </script>
 </body>
 </html>
+// このコードは、オセロゲームを実装したものです。オセロは、8×8のマス目に白と黒の石を交互に置いていき、石を挟んで相手の石を裏返すことで勝敗を競うゲームです。
