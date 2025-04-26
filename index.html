@@ -17,15 +17,11 @@
       display: flex;
       justify-content: space-between;
     }
-    #left-area {
+    #left-area, #middle-area, #right-area {
       flex: 1;
     }
     #middle-area {
-      flex: 1;
       text-align: center;
-    }
-    #right-area {
-      flex: 1;
     }
     #shopping-list {
       margin-top: 1em;
@@ -40,11 +36,7 @@
       padding: 0.2em 0.5em;
       font-size: 0.8em;
     }
-    .disabled {
-      opacity: 0.5;
-      pointer-events: none;
-    }
-    #continue-button[disabled] {
+    .disabled, #continue-button[disabled] {
       opacity: 0.5;
       pointer-events: none;
     }
@@ -73,13 +65,13 @@
       </div>
 
       <div id="main-area" style="display:none">
-        <h2>支出登録-月初めににリセットされる。</h2>
+        <h2>支出登録 - 月初めにリセットされる。</h2>
         <button id="use-food">食費 - 残り <span id="remain-food"></span> 円</button>
         <button id="use-fun">娯楽費 - 残り <span id="remain-fun"></span> 円</button>
       </div>
     </div>
 
-    <!-- 継続エリア（中央） -->
+    <!-- 継続エリア -->
     <div id="middle-area">
       <h2>継続</h2>
       <button id="continue-button">継続ボタン</button>
@@ -159,12 +151,8 @@
     }
 
     function showMainIfReady() {
-      if (budgets.food !== null) {
-        setButtons.food.classList.add('disabled');
-      }
-      if (budgets.fun !== null) {
-        setButtons.fun.classList.add('disabled');
-      }
+      if (budgets.food !== null) setButtons.food.classList.add('disabled');
+      if (budgets.fun !== null) setButtons.fun.classList.add('disabled');
       if (budgets.food !== null && budgets.fun !== null) {
         setupArea.style.display = 'none';
         mainArea.style.display = 'block';
@@ -178,19 +166,16 @@
         inputArea.style.display = 'block';
       }
     };
-
     setButtons.fun.onclick = () => {
       if (budgets.fun === null) {
         currentMode = 'set-fun';
         inputArea.style.display = 'block';
       }
     };
-
     useButtons.food.onclick = () => {
       currentMode = 'use-food';
       inputArea.style.display = 'block';
     };
-
     useButtons.fun.onclick = () => {
       currentMode = 'use-fun';
       inputArea.style.display = 'block';
@@ -280,12 +265,23 @@
 
     renderShoppingList();
 
-    // --- 継続ボタン（中央） ---
+    // --- 継続カウント修正版 ---
     const continueButton = document.getElementById('continue-button');
     const continueCount = document.getElementById('continue-count');
     const today = new Date().toISOString().split('T')[0];
     const lastClicked = localStorage.getItem('continue_date');
     let count = parseInt(localStorage.getItem('continue_count')) || 0;
+
+    // 🔥 一日でも押し忘れたらリセット！
+    if (lastClicked && lastClicked !== today) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yyyymmdd = yesterday.toISOString().split('T')[0];
+      if (lastClicked !== yyyymmdd) {
+        count = 0;
+        localStorage.setItem('continue_count', count);
+      }
+    }
 
     function updateContinueDisplay() {
       continueCount.textContent = `継続 ${count} 回`;
@@ -294,6 +290,7 @@
     if (lastClicked === today) {
       continueButton.disabled = true;
     }
+
     updateContinueDisplay();
 
     continueButton.onclick = () => {
