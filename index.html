@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>シンプル家計簿＋買い物リスト＋継続カウント</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 2em;
+    }
+    button {
+      margin: 0.5em;
+      padding: 1em 2.5em;
+      font-size: 1em;
+    }
+    #container {
+      display: flex;
+      justify-content: space-between;
+    }
+    #left-area {
+      flex: 1;
+    }
+    #middle-area {
+      flex: 1;
+      text-align: center;
+    }
+    #right-area {
+      flex: 1;
+    }
+    #shopping-list {
+      margin-top: 1em;
+      list-style: none;
+      padding-left: 0;
+    }
+    #shopping-list li {
+      margin-bottom: 0.5em;
+    }
+    .remove-button {
+      margin-left: 1em;
+      padding: 0.2em 0.5em;
+      font-size: 0.8em;
+    }
+    .disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    #continue-button[disabled] {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    #input-area {
+      margin-top: 1em;
+    }
+  </style>
+</head>
+<body>
+  <h1>シンプル家計簿</h1>
+
+  <div id="container">
+    <!-- 家計簿エリア -->
+    <div id="left-area">
+      <div id="history"></div>
+
+      <div id="setup-area">
+        <h2>月初設定</h2>
+        <button id="set-food">食費を設定</button>
+        <button id="set-fun">娯楽費を設定</button>
+      </div>
+
+      <div id="input-area" style="display:none">
+        <input type="number" id="input-amount" placeholder="金額を入力">
+        <button id="confirm-button">決定</button>
+      </div>
+
+      <div id="main-area" style="display:none">
+        <h2>支出登録</h2>
+        <button id="use-food">食費 - 残り <span id="remain-food"></span> 円</button>
+        <button id="use-fun">娯楽費 - 残り <span id="remain-fun"></span> 円</button>
+      </div>
+    </div>
+
+    <!-- 継続エリア（中央） -->
+    <div id="middle-area">
+      <h2>継続</h2>
+      <button id="continue-button">継続ボタン</button>
+      <p id="continue-count">継続 0 回</p>
+    </div>
+
+    <!-- 買い物リストエリア -->
+    <div id="right-area">
+      <h2>買い物リスト</h2>
+      <input type="text" id="item-input" placeholder="買うものを入力">
+      <button id="add-item">追加</button>
+      <ul id="shopping-list"></ul>
+    </div>
+  </div>
+
+  <script>
+    // --- 家計簿処理 ---
+    const now = new Date();
+    const yearMonth = `${now.getFullYear()}-${now.getMonth() + 1}`;
+    const prevYearMonth = localStorage.getItem('current_month');
+
+    if (prevYearMonth && prevYearMonth !== yearMonth) {
+      const prevFoodBudget = parseInt(localStorage.getItem('budget_food')) || 0;
+      const prevFunBudget = parseInt(localStorage.getItem('budget_fun')) || 0;
+      const prevFoodSpent = parseInt(localStorage.getItem('spent_food')) || 0;
+      const prevFunSpent = parseInt(localStorage.getItem('spent_fun')) || 0;
+
+      const foodRemain = prevFoodBudget - prevFoodSpent;
+      const funRemain = prevFunBudget - prevFunSpent;
+
+      const result = (foodRemain >= 0 && funRemain >= 0) ? '〇' : '×';
+      const displayMonth = prevYearMonth.replace('-', '年') + '月';
+
+      const log = JSON.parse(localStorage.getItem('history') || '[]');
+      log.push(`${displayMonth} ${result}`);
+      localStorage.setItem('history', JSON.stringify(log));
+
+      localStorage.removeItem('budget_food');
+      localStorage.removeItem('budget_fun');
+      localStorage.removeItem('spent_food');
+      localStorage.removeItem('spent_fun');
+    }
+    localStorage.setItem('current_month', yearMonth);
+
+    const budgets = {
+      food: parseInt(localStorage.getItem('budget_food')) || null,
+      fun: parseInt(localStorage.getItem('budget_fun')) || null
+    };
+    const spent = {
+      food: parseInt(localStorage.getItem('spent_food')) || 0,
+      fun: parseInt(localStorage.getItem('spent_fun')) || 0
+    };
+
+    let currentMode = null;
+
+    const setupArea = document.getElementById('setup-area');
+    const inputArea = document.getElementById('input-area');
+    const inputAmount = document.getElementById('input-amount');
+    const confirmButton = document.getElementById('confirm-button');
+    const mainArea = document.getElementById('main-area');
+    const remainFood = document.getElementById('remain-food');
+    const remainFun = document.getElementById('remain-fun');
+    const history = document.getElementById('history');
+
+    const setButtons = {
+      food: document.getElementById('set-food'),
+      fun: document.getElementById('set-fun')
+    };
+    const useButtons = {
+      food: document.getElementById('use-food'),
+      fun: document.getElementById('use-fun')
+    };
+
+    function updateRemain() {
+      remainFood.textContent = budgets.food - spent.food;
+      remainFun.textContent = budgets.fun - spent.fun;
+    }
+
+    function showMainIfReady() {
+      if (budgets.food !== null) {
+        setButtons.food.classList.add('disabled');
+      }
+      if (budgets.fun !== null) {
+        setButtons.fun.classList.add('disabled');
+      }
+      if (budgets.food !== null && budgets.fun !== null) {
+        setupArea.style.display = 'none';
+        mainArea.style.display = 'block';
+        updateRemain();
+      }
+    }
+
+    setButtons.food.onclick = () => {
+      if (budgets.food === null) {
+        currentMode = 'set-food';
+        inputArea.style.display = 'block';
+      }
+    };
+
+    setButtons.fun.onclick = () => {
+      if (budgets.fun === null) {
+        currentMode = 'set-fun';
+        inputArea.style.display = 'block';
+      }
+    };
+
+    useButtons.food.onclick = () => {
+      currentMode = 'use-food';
+      inputArea.style.display = 'block';
+    };
+
+    useButtons.fun.onclick = () => {
+      currentMode = 'use-fun';
+      inputArea.style.display = 'block';
+    };
+
+    confirmButton.onclick = () => {
+      const value = parseInt(inputAmount.value);
+      if (isNaN(value) || value < 0) return;
+
+      if (currentMode === 'set-food') {
+        budgets.food = value;
+        localStorage.setItem('budget_food', value);
+        setButtons.food.classList.add('disabled');
+      } else if (currentMode === 'set-fun') {
+        budgets.fun = value;
+        localStorage.setItem('budget_fun', value);
+        setButtons.fun.classList.add('disabled');
+      } else if (currentMode === 'use-food') {
+        spent.food += value;
+        localStorage.setItem('spent_food', spent.food);
+      } else if (currentMode === 'use-fun') {
+        spent.fun += value;
+        localStorage.setItem('spent_fun', spent.fun);
+      }
+
+      inputAmount.value = '';
+      inputArea.style.display = 'none';
+      updateRemain();
+      showMainIfReady();
+    };
+
+    function renderHistory() {
+      const log = JSON.parse(localStorage.getItem('history') || '[]');
+      if (log.length > 0) {
+        const ul = document.createElement('ul');
+        log.forEach(entry => {
+          const li = document.createElement('li');
+          li.textContent = entry;
+          ul.appendChild(li);
+        });
+        history.appendChild(ul);
+      }
+    }
+
+    renderHistory();
+    showMainIfReady();
+
+    // --- 買い物リスト ---
+    const addItemButton = document.getElementById('add-item');
+    const itemInput = document.getElementById('item-input');
+    const shoppingList = document.getElementById('shopping-list');
+    let items = JSON.parse(localStorage.getItem('shopping_items') || '[]');
+
+    function saveItems() {
+      localStorage.setItem('shopping_items', JSON.stringify(items));
+    }
+
+    function renderShoppingList() {
+      shoppingList.innerHTML = '';
+      items.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.textContent = item;
+
+        const removeButton = document.createElement('button');
+        removeButton.textContent = '消去';
+        removeButton.className = 'remove-button';
+        removeButton.onclick = () => {
+          items.splice(index, 1);
+          saveItems();
+          renderShoppingList();
+        };
+
+        li.appendChild(removeButton);
+        shoppingList.appendChild(li);
+      });
+    }
+
+    addItemButton.onclick = () => {
+      const item = itemInput.value.trim();
+      if (item) {
+        items.push(item);
+        saveItems();
+        renderShoppingList();
+        itemInput.value = '';
+      }
+    };
+
+    renderShoppingList();
+
+    // --- 継続ボタン（中央） ---
+    const continueButton = document.getElementById('continue-button');
+    const continueCount = document.getElementById('continue-count');
+    const today = new Date().toISOString().split('T')[0];
+    const lastClicked = localStorage.getItem('continue_date');
+    let count = parseInt(localStorage.getItem('continue_count')) || 0;
+
+    function updateContinueDisplay() {
+      continueCount.textContent = `継続 ${count} 回`;
+    }
+
+    if (lastClicked === today) {
+      continueButton.disabled = true;
+    }
+    updateContinueDisplay();
+
+    continueButton.onclick = () => {
+      localStorage.setItem('continue_date', today);
+      count++;
+      localStorage.setItem('continue_count', count);
+      updateContinueDisplay();
+      continueButton.disabled = true;
+    };
+  </script>
+</body>
+</html>
